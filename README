@@ -1,0 +1,1 @@
+Project files for the pMap service, currently calls jQuery and google apis remotely, but does require a local copy of jquery-gmap3
