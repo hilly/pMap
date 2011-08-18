@@ -39,155 +39,156 @@
 		</style>
 	</head>
 	<body>
-		<div id="wrapper style="width: 500px; margin: 20px auto;">
-		<div id="gmap"></div>
-		<div>
-			<button id="autofitbutton">
-				Re-Centre Map
-			</button>
-		</div>
-		<div>
-			<button id="wardbutton">
-				Toggle Ward Selection
-			</button>
-		</div>
-		<div id="wards"></div>
-		<div>
-			<button id="gmapnotbutton">
-				Toggle Unmapped Applications (No Postcode)
-			</button>
-		</div>
-		<div id="gmapnot"></div>
-		<script type="text/javascript" charset="utf-8">
-			$("button#autofitbutton").click(function() {
-				$('#gmap').gmap3("autofit");
-			});
-			$("button#gmapnotbutton").click(function() {
-				// enable the toggling of unmapped applications
-				$("#gmapnot").toggle("slow");
-			});
-			$("button#wardbutton").click(function() {
-				// enable the toggling of unmapped applications
-				$("#wards").toggle("slow");
-			});
-			$('#gmap').gmap3({
-				action : 'init',
-				options : {
-					center : [51.4738989064778, 0.04119873046875],
-					zoom : 12
-				}
-			});
-
-			// create a date object
-			var today = new Date();
-			var regdate1 = new Date();
-			var regdate2 = new Date();
-			regdate1.setDate(today.getDate() - 14);
-			regdate2.setDate(today.getDate());
-
-			// get the planning data via yahoo pipes
-			$.getJSON('http://pipes.yahoo.com/selondon/lbgplanningv1_1?regdate1=' + regdate1.getDate() + '%2F0' + (regdate1.getMonth() + 1) + '%2F' + regdate1.getFullYear() + '&regdate2=' + regdate2.getDate() + '%2F0' + (regdate2.getMonth() + 1) + '%2F' + regdate2.getFullYear() + '&_render=json&_callback=?', function(apps) {
-
-				var dat = [], r, k = 0, regions = [], $wards = $("#wards");
-
-				// loop through each application
-				$.each(apps.value.items, function(i, data) {
-
-					// container for html content extracted from the planning data
-					var items_loc = [];
-
-					// look for start the postcode
-					var start = data.content[8].content.search("[A-Z]{2}[0-9]{1,2} [0-9][A-Z][A-Z]{1}");
-					// set postcode to string from that point
-					var postcode = data.content[8].content.substr(start);
-					// if the postcode extracted was too short - it probably wasn't real and can't be mapped, and is added as text only
-					if(postcode.length < 6) {
-						postcode = '';
-						items_loc.push('<li>' + data.content[0].content + '<hr />' + data.content[8].content + '<hr />' + data.content[10].content + '</li>');
-						$('<ul/>', {
-							'class' : 'no-postcode-list',
-							html : items_loc.join(',')
-						}).appendTo('#gmapnot');
+		<div id="wrapper" style="width: 500px; float:left">
+			<div id="gmap"></div>
+			<div>
+				<button id="autofitbutton">
+					Re-Centre Map
+				</button>
+			</div>
+			<div>
+				<button id="wardbutton">
+					Toggle Ward Selection
+				</button>
+			</div>
+			<div id="wards"></div>
+			<div>
+				<button id="gmapnotbutton">
+					Toggle Unmapped Applications (No Postcode)
+				</button>
+			</div>
+			<div id="gmapnot"></div>
+			<script type="text/javascript" charset="utf-8">
+				$("button#autofitbutton").click(function() {
+					$('#gmap').gmap3("autofit");
+				});
+				$("button#gmapnotbutton").click(function() {
+					// enable the toggling of unmapped applications
+					$("#gmapnot").toggle("slow");
+				});
+				$("button#wardbutton").click(function() {
+					// enable the toggling of unmapped applications
+					$("#wards").toggle("slow");
+				});
+				$('#gmap').gmap3({
+					action : 'init',
+					options : {
+						center : [51.4738989064778, 0.04119873046875],
+						zoom : 12
 					}
-					// or else the postcode could be trimmed correctly, and hence is in a usable form
-					else {
+				});
 
-						// request the geo data for the postcode from mapit
-						$.getJSON('http://mapit.mysociety.org/postcode/' + postcode, function(locations) {
-							// merge retrieved locations into planning data
-							$.extend(data, locations);
+				// create a date object
+				var today = new Date();
+				var regdate1 = new Date();
+				var regdate2 = new Date();
+				regdate1.setDate(today.getDate() - 14);
+				regdate2.setDate(today.getDate());
 
-							dat.push({
-								lat : data.wgs84_lat,
-								lng : data.wgs84_lon,
-								tag : data.content[4].content.substr(11).toLowerCase(),
-								ca : data.content[7].content.substr(19).toLowerCase(),
-								data : data.content[0].content + '<hr />' + data.content[8].content + '<hr />' + data.content[10].content
-							});
+				// get the planning data via yahoo pipes
+				$.getJSON('http://pipes.yahoo.com/selondon/lbgplanningv1_1?regdate1=' + regdate1.getDate() + '%2F0' + (regdate1.getMonth() + 1) + '%2F' + regdate1.getFullYear() + '&regdate2=' + regdate2.getDate() + '%2F0' + (regdate2.getMonth() + 1) + '%2F' + regdate2.getFullYear() + '&_render=json&_callback=?', function(apps) {
 
-							$('#gmap').gmap3({
-								action : 'addMarkers',
-								markers : [dat[dat.length - 1]],
-								marker : {
-									options : {
-										draggable : false
-									},
-									events : {
-										click : function(marker, event, data) {
-											var map = $(this).gmap3('get'), infowindow = $(this).gmap3({
-												action : 'get',
-												name : 'infowindow'
-											});
-											if(infowindow) {
-												infowindow.open(map, marker);
-												infowindow.setContent(data);
-											} else {
-												$(this).gmap3({
-													action : 'addinfowindow',
-													anchor : marker,
-													options : {
-														content : data
-													}
+					var dat = [], r, k = 0, regions = [], $wards = $("#wards");
+
+					// loop through each application
+					$.each(apps.value.items, function(i, data) {
+
+						// container for html content extracted from the planning data
+						var items_loc = [];
+
+						// look for start the postcode
+						var start = data.content[8].content.search("[A-Z]{2}[0-9]{1,2} [0-9][A-Z][A-Z]{1}");
+						// set postcode to string from that point
+						var postcode = data.content[8].content.substr(start);
+						// if the postcode extracted was too short - it probably wasn't real and can't be mapped, and is added as text only
+						if(postcode.length < 6) {
+							postcode = '';
+							items_loc.push('<li>' + data.content[0].content + '<hr />' + data.content[8].content + '<hr />' + data.content[10].content + '</li>');
+							$('<ul/>', {
+								'class' : 'no-postcode-list',
+								html : items_loc.join(',')
+							}).appendTo('#gmapnot');
+						}
+						// or else the postcode could be trimmed correctly, and hence is in a usable form
+						else {
+
+							// request the geo data for the postcode from mapit
+							$.getJSON('http://mapit.mysociety.org/postcode/' + postcode + '?callback=?', function(locations) {
+								// merge retrieved locations into planning data
+								$.extend(data, locations);
+
+								dat.push({
+									lat : data.wgs84_lat,
+									lng : data.wgs84_lon,
+									tag : data.content[4].content.substr(11).toLowerCase(),
+									ca : data.content[7].content.substr(19).toLowerCase(),
+									data : data.content[0].content + '<hr />' + data.content[8].content + '<hr />' + data.content[10].content
+								});
+
+								$('#gmap').gmap3({
+									action : 'addMarkers',
+									markers : [dat[dat.length - 1]],
+									marker : {
+										options : {
+											draggable : false
+										},
+										events : {
+											click : function(marker, event, data) {
+												var map = $(this).gmap3('get'), infowindow = $(this).gmap3({
+													action : 'get',
+													name : 'infowindow'
 												});
+												if(infowindow) {
+													infowindow.open(map, marker);
+													infowindow.setContent(data);
+												} else {
+													$(this).gmap3({
+														action : 'addinfowindow',
+														anchor : marker,
+														options : {
+															content : data
+														}
+													});
+												}
 											}
 										}
 									}
-								}
-							});
+								});
 
-							// Wards checkbuttons
-							if(regions.toString().search(data.content[4].content.substr(11).toLowerCase()) == -1) {
-								regions.push(data.content[4].content.substr(11).toLowerCase());
-								$wards.append('<div><input id="chk' + k + '" type="checkbox" checked=""><label for="chk' + k + '">' + regions[k] + '</label></div>');
-								k++;
-							};
-							$("#wards").jSort({
-								sort_by : 'label',
-								item : 'div',
-								order : 'asc'
-							});
-							$('input', $wards).change(function() {
-								var region = $('label[for=' + $(this).attr('id') + ']', $wards).html(), checked = $(this).is(':checked'), map = $('#gmap').gmap3('get'), markers;
-								markers = $('#gmap').gmap3({
-									action : 'get',
-									name : 'marker',
-									all : true,
-									tag : region
+								// Wards checkbuttons
+								if(regions.toString().search(data.content[4].content.substr(11).toLowerCase()) == -1) {
+									regions.push(data.content[4].content.substr(11).toLowerCase());
+									$wards.append('<div><input id="chk' + k + '" type="checkbox" checked=""><label for="chk' + k + '">' + regions[k] + '</label></div>');
+									k++;
+								};
+								$("#wards").jSort({
+									sort_by : 'label',
+									item : 'div',
+									order : 'asc'
 								});
-								$.each(markers, function(i, marker) {
-									marker.setMap( checked ? map : null);
+								$('input', $wards).change(function() {
+									var region = $('label[for=' + $(this).attr('id') + ']', $wards).html(), checked = $(this).is(':checked'), map = $('#gmap').gmap3('get'), markers;
+									markers = $('#gmap').gmap3({
+										action : 'get',
+										name : 'marker',
+										all : true,
+										tag : region
+									});
+									$.each(markers, function(i, marker) {
+										marker.setMap( checked ? map : null);
+									});
 								});
+								
 							});
-						});
-						// end - getJSON locations from mapit
-					}
+							// end - getJSON locations from mapit
+						}
+					});
+					// end - each application
 				});
-				// end - each application
-			});
 
-			$('#gmap').gmap3("autofit");
+				$('#gmap').gmap3("autofit");
 
-		</script>
+			</script>
 		</div>
 	</body>
 </html>
