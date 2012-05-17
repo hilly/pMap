@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>pMap</title>
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+		<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+		<script type="text/javascript" src="http://gmap3.net/js/gmap3-4.1-min.js"></script>
+		<script type="text/javascript" src="http://do-web.com/js/jsort/jquery.jsort.0.3.min.js"></script>
+		<style type="text/css">
+			label {
+				background-color: #74c4ef;
+			}
+			#gmap {
+				height: 272px;
+				width: 272px;
+			}
+			#gmapnot {
+				width: 272px;
+				color: #888888;
+				font-size:12px;
+			}
+			#gmapnot ul {
+				list-style: none outside none;
+				padding-left: 1em;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="wrapper" style="width: 272px; float:left">
+			<div id="gmap"></div>
+			<div id="gmapnot"><div style="text-align:center;">Proposed changes in the area being consulted on now.</div><h3>Non mapped applications (no postcode)</h3></div>
+			<script type="text/javascript" charset="utf-8">
+				$("button#autofitbutton").click(function() {
+					$('#gmap').gmap3("autofit");
+				});
+				$('#gmap').gmap3({
+					action : 'init', 
+					options : {
+						mapTypeId : google.maps.MapTypeId.TERRAIN,
+						center : [51.4736666, 0.0722317],
+					}
+				},
+				{ 
+					action: 'addKmlLayer',
+					url: 'http://maps.google.com/maps/ms?msa=0&msid=207973813503390586468.0004bcf6864c385a2bd14&output=kml',
+					// http://maps.google.com/maps/ms?ie=UTF8&authuser=0&msa=0&output=kml&msid=207973813503390586468.0004bcf6864c385a2bd14
+					options:{
+						suppressInfoWindows: true,
+						preserveViewport: false,
+						zoom : 13
+					}
+				}
+				);
+
+				// create a date object
+				var today = new Date();
+				var regdate1 = new Date();
+				var regdate2 = new Date();
+				regdate1.setDate(today.getDate() - 90);
+				regdate2.setDate(today.getDate());
+
+				// get the planning data via yahoo pipes
+				$.getJSON('http://pipes.yahoo.com/selondon/rbgplanningv1_2?regdate1=' + regdate1.getDate() + '%2F0' + (regdate1.getMonth() + 1) + '%2F' + regdate1.getFullYear() + '&regdate2=' + regdate2.getDate() + '%2F0' + (regdate2.getMonth() + 1) + '%2F' + regdate2.getFullYear() + '&_render=json&_callback=?', function(apps) {
+
+					var dat = [], r, k = 0, regions = [], $wards = $("#wards");
+
+					// loop through each application
+					$.each(apps.value.items, function(i, data) {
+
+						// container for html content extracted from the planning data
+						var items_loc = [];
+
+						// look for start the postcode
+						var start = data.content[8].content.search("[A-Z]{2}[0-9]{1,2} [0-9][A-Z][A-Z]{1}");
+						// set postcode to string from that point
+						var postcode = data.content[8].content.substr(start);
+						// or else the postcode could be trimmed correctly, and hence is in a usable form
+
+						var ward = data.content[4].content;
+						
+						// if (postcode.substring(0, 6) == "SE18 3"){
+						// if (postcode.substring(0, 4) == "SE18" && ward.toLowerCase() == "ward name: shooters hill"){
+						if (ward.toLowerCase() == "ward name: shooters hill"){
+							if(postcode.length < 6) {
+								postcode = '';
+								items_loc.push('<li>Application: ' + data.content[0].content.substring(139) + '<ul><li>' + data.content[8].content + '</li><li>' + data.content[10].content + '</li></ul>');
+								$('<ul/>', {
+									'class' : 'no-postcode-list',
+									html : items_loc.join(',')
+								}).appendTo('#gmapnot');
+							}
+							// or else the postcode could be trimmed correctly, and hence is in a usable form
+							else {
+								// request the geo data for the postcode from mapit
+								$.getJSON('http://mapit.mysociety.org/postcode/' + postcode + '?callback=?', function(locations) {
+									// merge retrieved locations into planning data
+									$.extend(data, locations);
+									info = data.content[0].content + '<br />' + data.content[8].content + '<br />' + data.content[10].content;
+									dat.push({
+										lat : data.wgs84_lat,
+										lng : data.wgs84_lon,
+										tag : data.content[4].content.substr(11).toLowerCase(),
+										ca : data.content[7].content.substr(19).toLowerCase(),
+										data : '<span style="font-size:12px">Application: ' + info.substring(139) + '</span>'});
+
+									$('#gmap').gmap3({
+										action : 'addMarkers',
+										markers : [dat[dat.length - 1]],
+										marker : {
+											options : {
+												draggable : false
+											},
+											events : {
+												click : function(marker, event, data) {
+													var map = $(this).gmap3('get'), infowindow = $(this).gmap3({
+														action : 'get',
+														name : 'infowindow'
+													});
+													if(infowindow) {
+														infowindow.open(map, marker);
+														infowindow.setContent(data);
+													} else {
+														$(this).gmap3({
+															action : 'addinfowindow',
+															anchor : marker,
+															options : {
+																content : data,
+																maxWidth : 100
+															}
+														});
+													}
+												}
+											}
+										}
+									});
+								});
+							}
+							// end - getJSON locations from mapit
+						}
+					});
+					// end - each application
+				});
+
+			</script>
+		</div>
+	</body>
+</html>
