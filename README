@@ -1,1 +1,1 @@
-Project files for the pMap service, currently calls jQuery and google apis remotely, but does require a local copy of jquery-gmap3
+pMap scrapes planning applications in Royal Borough of Greenwich, specifically those in Shooters Hill ward, obtains their lat/lon co-ordinates from mysociety, and plots them on a map.
